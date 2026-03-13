@@ -1,27 +1,43 @@
 import cv2
 import numpy as np
+import pyttsx3
+import time
+import threading
+
+# Speak Setup
+
+engine = pyttsx3.init()
+engine.setProperty('rate', 160)
+engine.setProperty('volume', 1.0)
+
+tts_lock = threading.Lock()
+last_spoken = {}          # tracks last time each class was announced
+COOLDOWN = 3.0            # seconds before repeating the same alert
+
+def speak(text):
+    """Run TTS in a background thread so video doesn't freeze."""
+    def _speak():
+        with tts_lock:
+            engine.say(text)
+            engine.runAndWait()
+    threading.Thread(target=_speak, daemon=True).start()
+
+def should_speak(label):
+    """Only speak if cooldown has passed for this class."""
+    now = time.time()
+    if label not in last_spoken or (now - last_spoken[label]) > COOLDOWN:
+        last_spoken[label] = now
+        return True
+    return False
 
 # Load model
-net = cv2.dnn.readNetFromTensorflow(
-    'models/frozen_inference_graph.pb',
-    'models/ssd_mobilenet_v2_coco_2018_03_29.pbtxt'
-)
 
-CLASSES = ["background","person","bicycle","car","motorcycle",
-           "airplane","bus","train","truck","boat","traffic light",
-           "fire hydrant","stop sign","parking meter","bench","bird",
-           "cat","dog","horse","sheep","cow","elephant","bear",
-           "zebra","giraffe","backpack","umbrella","handbag","tie",
-           "suitcase","frisbee","skis","snowboard","sports ball",
-           "kite","baseball bat","baseball glove","skateboard",
-           "surfboard","tennis racket","bottle","wine glass","cup",
-           "fork","knife","spoon","bowl","banana","apple","sandwich",
-           "orange","broccoli","carrot","hot dog","pizza","donut",
-           "cake","chair","couch","potted plant","bed","dining table",
-           "toilet","tv","laptop","mouse","remote","keyboard",
-           "cell phone","microwave","oven","toaster","sink",
-           "refrigerator","book","clock","vase","scissors",
-           "teddy bear","hair drier","toothbrush"]
+net = cv2.dnn.readNetFromTensorflow('Models/detect.tflite')
+
+with open('models/labelmap.txt', 'r') as f:
+    CLASSES = [line.strip() for line in f.readlines()]
+
+#Detection loop
 
 cap = cv2.VideoCapture(0)
 
