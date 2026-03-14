@@ -1,0 +1,21 @@
+# Virtual Environment
+venv/
+nav_aid_env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Model files (too large for git)
+Models/
+*.tflite
+*.pb
+*.pbtxt
+
+# VS Code settings
+.vscode/
+
+# Temp files
+*.tmp
+*.log
