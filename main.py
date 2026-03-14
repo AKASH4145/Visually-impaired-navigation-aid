@@ -13,6 +13,7 @@ import os
 import tempfile
 
 # TTS Setup 
+
 pygame.mixer.init()
 tts_queue = queue.Queue()
 last_spoken = {}
@@ -57,11 +58,7 @@ def should_speak(label):
         return True
     return False
 
-#--------------------------------------------------------------------------------------------------
-
 # Load TFLite model and labels
-
-#_---------------------------------------------------------------------------------------------------
 
 MODEL_PATH = r'C:\Users\akash\Desktop\OpenCV Projects\Visually impaired navigation aid\Models\detect.tflite'
 LABEL_PATH = r'C:\Users\akash\Desktop\OpenCV Projects\Visually impaired navigation aid\Models\labelmap.txt'
@@ -78,11 +75,8 @@ with open(LABEL_PATH, 'r') as f:
 if CLASSES[0] == '???':          # some labelmap.txt files have this as first line
     CLASSES.pop(0)
 
-#--------------------------------------------------------------------------------------------------
 
-# Spatial position helper — YOUR ADDITION
-
-#--------------------------------------------------------------------------------------------------
+# Spatial position 
 
 def get_position(cx, frame_w):
     third = frame_w // 3
@@ -92,8 +86,11 @@ def get_position(cx, frame_w):
         return "ahead"
     else:
         return "on your right"
+    
 
 # Detection loop
+
+
 cap = cv2.VideoCapture(0)
 
 while True:
@@ -103,7 +100,6 @@ while True:
 
     h, w = frame.shape[:2]
 
-    # ── CHANGED: TFLite inference instead of cv2.dnn ──────────────────────────
     img = cv2.resize(frame, (input_w, input_h))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     input_data = np.expand_dims(img, axis=0)
@@ -117,7 +113,6 @@ while True:
     boxes   = interpreter.get_tensor(output_details[0]['index'])[0]
     classes = interpreter.get_tensor(output_details[1]['index'])[0]
     scores  = interpreter.get_tensor(output_details[2]['index'])[0]
-    # ─────────────────────────────────────────────────────────────────────────
 
     for i in range(len(scores)):
         if scores[i] < 0.5:
@@ -136,12 +131,14 @@ while True:
         cv2.putText(frame, f"{message} ({scores[i]:.0%})",
                     (x1, y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 100), 1)
 
-        # ── ADDED: TTS alert ──────────────────────────────────────────────────
+        # TTS alert
+
         if should_speak(label):
             speak(message)
             print(f"[ALERT] {message}")
 
-    # YOUR fps display — unchanged
+    # fps display
+    
     fps = cap.get(cv2.CAP_PROP_FPS)
     cv2.putText(frame, f"FPS: {fps:.1f}", (10, 25),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
