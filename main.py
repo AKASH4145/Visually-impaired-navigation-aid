@@ -12,6 +12,20 @@ import queue
 import os
 import tempfile
 
+#Distance estimation
+def estimate_distance(y1, y2, frame_h):
+    box_height = y2 - y1
+    ratio = box_height / frame_h
+
+    if ratio > 0.6:
+        return "very close"
+    elif ratio > 0.35:
+        return "close"
+    elif ratio > 0.15:
+        return "nearby"
+    else:
+        return "far"
+
 # TTS Setup 
 
 pygame.mixer.init()
@@ -125,8 +139,9 @@ while True:
 
         label    = CLASSES[int(classes[i])]
         position = get_position(cx, w)
-        message  = f"{label} {position}"
-
+        distance = estimate_distance(y1, y2, h)
+        message  = f"{label} {position} {distance}"
+       
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 200, 100), 2)
         cv2.putText(frame, f"{message} ({scores[i]:.0%})",
                     (x1, y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 100), 1)
