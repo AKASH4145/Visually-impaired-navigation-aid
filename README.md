@@ -136,7 +136,6 @@ Visually Impaired Navigation Aid/
 
 ## Future Scope
 
-- Distance estimation (near / far alerts)
 
 - Obstacle proximity warning
 
