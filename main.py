@@ -18,13 +18,13 @@ def estimate_distance(y1, y2, frame_h):
     ratio = box_height / frame_h
 
     if ratio > 0.6:
-        return "very close"
+        return "very close",(0, 0, 255) #red
     elif ratio > 0.35:
-        return "close"
+        return "close",(0, 165, 255) #orange
     elif ratio > 0.15:
-        return "nearby"
+        return "nearby",(0, 255, 0) #green
     else:
-        return "far"
+        return "far",(255, 0, 0) #blue
 
 # TTS Setup 
 
@@ -101,6 +101,40 @@ def get_position(cx, frame_w):
     else:
         return "on your right"
     
+# On-Screen HUD
+
+def draw_hud(frame, detections_list, fps):
+    h, w = frame.shape[:2]
+
+    # HUD background panel
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (0, 0), (280, 30 + len(detections_list) * 22 + 30), (0, 0, 0), -1)
+    cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
+
+    # FPS
+    cv2.putText(frame, f"FPS: {fps:.1f}", (10, 22),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+    # Detected objects list
+    cv2.putText(frame, "Detected:", (10, 48),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+
+    for idx, (label, position, distance, color) in enumerate(detections_list):
+        text = f"  {label} | {position} | {distance}"
+        cv2.putText(frame, text, (10, 70 + idx * 22),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+
+    # Zone guide at bottom
+    zone_y = h - 30
+    cv2.line(frame, (w // 3, zone_y - 10), (w // 3, h), (255, 255, 255), 1)    
+    cv2.line(frame, (2 * w // 3, zone_y - 10), (2 * w // 3, h), (255, 255, 255), 1)
+    cv2.putText(frame, "LEFT", (10, h - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    cv2.putText(frame, "AHEAD", (w // 3 + 10, h - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    cv2.putText(frame, "RIGHT", (2 * w // 3 + 10, h - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
 
 # Detection loop
 
@@ -139,9 +173,9 @@ while True:
 
         label    = CLASSES[int(classes[i])]
         position = get_position(cx, w)
-        distance = estimate_distance(y1, y2, h)
+        distance,color = estimate_distance(y1, y2, h)
         message  = f"{label} {position} {distance}"
-       
+        detections_list = []
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 200, 100), 2)
         cv2.putText(frame, f"{message} ({scores[i]:.0%})",
                     (x1, y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 100), 1)
@@ -151,6 +185,7 @@ while True:
         if should_speak(label):
             speak(message)
             print(f"[ALERT] {message}")
+            detections_list.append((label, position, distance, color))
 
     # fps display
     
@@ -162,5 +197,13 @@ while True:
     if cv2.waitKey(1) ==13:
         break
 
+    # Draw HUD
+    draw_hud(frame, detections_list, fps)
+
+    cv2.imshow("Visually Impaired Navigation Aid", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+    
 cap.release()
 cv2.destroyAllWindows()
