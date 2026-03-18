@@ -10,6 +10,21 @@ import pygame
 import os
 import tempfile
 
+#Setting Object Priority for TTS alerts
+
+PRIORITY_OBJECTS = [
+    "person", "car", "truck", "bus",
+    "motorcycle", "bicycle", "dog", "cat"
+]
+
+#Priority determination function
+
+def get_priority(label):
+    if label in PRIORITY_OBJECTS:
+        return 0   # high priority
+    return 1       # low priority
+
+
 # ── Distance Estimation ───────────────────────────────────────────────────────
 def estimate_distance(y1, y2, frame_h):
     ratio = (y2 - y1) / frame_h
@@ -21,6 +36,17 @@ def estimate_distance(y1, y2, frame_h):
         return "nearby", (0, 255, 0)           # Green
     else:
         return "far", (255, 0, 0)              # Blue
+    
+
+# Low light enhancement using CLAHE
+
+def enhance_low_light(frame):
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+    enhanced = cv2.merge((l, a, b))
+    return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)    
 
 # ── TTS Setup ─────────────────────────────────────────────────────────────────
 pygame.mixer.init()
@@ -121,7 +147,7 @@ while True:
     ret, frame = cap.read()
     if not ret:
         break
-
+    frame = enhance_low_light(frame)
     h, w = frame.shape[:2]
     detections_list = []  #  reset every frame
 
@@ -139,7 +165,7 @@ while True:
     boxes   = interpreter.get_tensor(output_details[0]['index'])[0]
     classes = interpreter.get_tensor(output_details[1]['index'])[0]
     scores  = interpreter.get_tensor(output_details[2]['index'])[0]
-
+    detections=[]
     for i in range(len(scores)):
         if scores[i] < 0.5:
             continue
@@ -152,13 +178,17 @@ while True:
         label    = CLASSES[int(classes[i])]
         position = get_position(cx, w)
         distance, color = estimate_distance(y1, y2, h)
+        detections.append((label, position, distance, color, x1, y1, x2, y2, scores[i]))
+        detections.sort(key=lambda x: get_priority(x[0]))
+
 
         # Proximity warning
         if distance == "very close":
             message = f"Warning! {label} very close {position}"
         else:
             message = f"{label} {distance} {position}"
-
+        
+        
         # Draw bounding box
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, f"{label} | {distance} ({scores[i]:.0%})",
@@ -169,7 +199,7 @@ while True:
             speak(message)
             print(f"[ALERT] {message}")
 
-        detections_list.append((label, position, distance, color))  # ✅ always append
+        detections_list.append((label, position, distance, color))  #  always append
 
     # FPS — calculated manually for accuracy
     curr_time = time.time()
@@ -181,7 +211,7 @@ while True:
 
     #  Single imshow and waitKey
     cv2.imshow("Visually Impaired Navigation Aid", frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) == 13:  
         break
 
 # ── Graceful Exit ─────────────────────────────────────────────────────────────
