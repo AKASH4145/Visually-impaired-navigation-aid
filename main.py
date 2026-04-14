@@ -74,8 +74,8 @@ def should_speak(label):
 
 # Load TFLite model and labels
 
-MODEL_PATH = r'C:\Users\akash\Desktop\OpenCV Projects\Visually impaired navigation aid\Models\detect.tflite'
-LABEL_PATH = r'C:\Users\akash\Desktop\OpenCV Projects\Visually impaired navigation aid\Models\labelmap.txt'
+MODEL_PATH = r'C:\Users\akash\OneDrive\Desktop\OpenCV Projects\Visually impaired navigation aid\Models\detect.tflite'
+LABEL_PATH = r'C:\Users\akash\OneDrive\Desktop\OpenCV Projects\Visually impaired navigation aid\Models\labelmap.txt'
 
 interpreter = tflite(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
@@ -139,7 +139,7 @@ def draw_hud(frame, detections_list, fps):
 # Detection loop
 
 
-cap = cv2.VideoCapture(1) #Droidcam accesses webcam as video source 1, change to 0 if using built-in webcam
+cap = cv2.VideoCapture(0) #Droidcam accesses webcam as video source 1, change to 0 if using built-in webcam
 
 while True:
     ret, frame = cap.read()

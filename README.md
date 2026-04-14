@@ -106,7 +106,7 @@ Visually Impaired Navigation Aid/
 
 ## Demo Screenshots and Video
  
- Demo Screenshots and Videos will be added soon !
+ 🎥 Demo Video :[Watch on drive](https://drive.google.com/file/d/1riByIPXL4uLFiqIOJKDWfvIDHHPTYyvM/view?usp=sharing)
 
 ---
 
